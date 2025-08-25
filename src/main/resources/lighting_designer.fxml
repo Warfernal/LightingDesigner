@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.phoenixcorp.overlay.LightingDesignerController">
+    <top>
+        <HBox spacing="8">
+            <padding>
+                <Insets topRightBottomLeft="10"/>
+            </padding>
+            <Button fx:id="startBtn" text="Start"/>
+            <Button fx:id="stopBtn" text="Stop"/>
+            <Button fx:id="defineAreaBtn" text="Définir la zone"/>
+            <Label  fx:id="statusLbl" text="Stopped"/>
+        </HBox>
+    </top>
+    <center>
+        <Label text="Prévisualisez vos couleurs, puis utilisez Start pour lier l’OCR aux effets."/>
+    </center>
+</BorderPane>
