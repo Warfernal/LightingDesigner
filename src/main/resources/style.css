@@ -1,0 +1,83 @@
+/* Agrandit la base typographique (12 → 14/15/16) */
+.root {
+  -fx-base: #0f141a;
+  -fx-background-color: linear-gradient(to bottom, #0f141a, #0b1015);
+  -fx-text-fill: #e6eef8;
+  -fx-accent: #4ea1ff;
+  -fx-font-size: 15px; /* ← augmente ici (14–16) */
+}
+
+/* Titre plus visible */
+.title { -fx-font-size: 20px; -fx-font-weight: bold; }
+
+/* Boutons un poil plus gros */
+.button { -fx-padding: 10 16 10 16; -fx-background-radius: 10; }
+
+/* Sliders un poil plus confort */
+.slider .thumb { -fx-padding: 10; }
+
+/* Les “touches” de l’aperçu plus grandes */
+.key {
+  -fx-min-width: 22px; -fx-max-width: 22px;
+  -fx-min-height: 14px; -fx-max-height: 14px;
+  -fx-background-radius: 4;
+  -fx-background-color: #10151b;
+  -fx-border-color: #1f2a36;
+  -fx-border-radius: 4;
+}
+
+.button:hover {
+  -fx-background-color: #223142;
+}
+.button.primary {
+  -fx-background-color: #2b86ff;
+  -fx-text-fill: white;
+}
+.button.primary:hover {
+  -fx-background-color: #2a79e6;
+}
+.button.secondary {
+  -fx-background-color: #26384a;
+}
+
+.button.chip {
+  -fx-background-radius: 999;
+  -fx-padding: 6 12 6 12;
+}
+
+.titled-pane > .title {
+  -fx-background-color: #121a22;
+  -fx-padding: 8 10 8 10;
+}
+.titled-pane > *.content {
+  -fx-background-color: #11171e;
+  -fx-padding: 10;
+}
+
+.slider .track {
+  -fx-background-color: #243445;
+  -fx-background-radius: 5;
+}
+.slider .thumb {
+  -fx-background-color: #2b86ff;
+  -fx-background-radius: 999;
+  -fx-padding: 8;
+}
+
+.statusbar {
+  -fx-background-color: #0d1319;
+  -fx-border-color: #1d2a36;
+  -fx-border-width: 1 0 0 0;
+}
+
+/* preview "touches" */
+.key {
+  -fx-min-width: 18px;
+  -fx-max-width: 18px;
+  -fx-min-height: 12px;
+  -fx-max-height: 12px;
+  -fx-background-radius: 4;
+  -fx-background-color: #10151b;
+  -fx-border-color: #1f2a36;
+  -fx-border-radius: 4;
+}

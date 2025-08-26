@@ -4,19 +4,129 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.phoenixcorp.overlay.LightingDesignerController">
+            fx:controller="com.phoenixcorp.overlay.LightingDesignerController"
+            stylesheets="@style.css"
+            prefWidth="1200.0" prefHeight="800.0">
+
+
+    <!-- En-tête -->
     <top>
-        <HBox spacing="8">
+        <VBox spacing="10">
             <padding>
-                <Insets topRightBottomLeft="10"/>
+                <Insets top="14.0" right="14.0" bottom="0.0" left="14.0"/>
             </padding>
-            <Button fx:id="startBtn" text="Start"/>
-            <Button fx:id="stopBtn" text="Stop"/>
-            <Button fx:id="defineAreaBtn" text="Définir la zone"/>
-            <Label  fx:id="statusLbl" text="Stopped"/>
-        </HBox>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <Label text="Phoenix Lighting Designer" styleClass="title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="defineAreaBtn" text="Définir la zone" styleClass="secondary"/>
+                <Button fx:id="startBtn" text="Start" styleClass="primary"/>
+                <Button fx:id="stopBtn" text="Stop"/>
+            </HBox>
+        </VBox>
     </top>
+
+    <!-- Centre : Color pickers + aperçu -->
     <center>
-        <Label text="Prévisualisez vos couleurs, puis utilisez Start pour lier l’OCR aux effets."/>
+        <VBox spacing="16">
+            <padding>
+                <Insets top="14.0" right="14.0" bottom="14.0" left="14.0"/>
+            </padding>
+
+            <!-- Couleurs simples -->
+            <TitledPane text="Couleurs principales" expanded="true">
+                <content>
+                    <HBox spacing="18">
+                        <VBox spacing="6">
+                            <Label text="HP"/>
+                            <ColorPicker fx:id="hpColorPicker"/>
+                        </VBox>
+
+                        <VBox spacing="6">
+                            <Label text="Fond du clavier &amp; périphériques"/>
+                            <ColorPicker fx:id="bgColorPicker"/>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <VBox spacing="8" alignment="CENTER">
+                            <Button fx:id="presetWowBtn" text="Preset WoW" styleClass="chip"/>
+                            <Button fx:id="resetColorsBtn" text="Réinitialiser" styleClass="chip"/>
+                        </VBox>
+                    </HBox>
+                </content>
+            </TitledPane>
+
+            <!-- Couleurs par type -->
+            <TitledPane text="Avancé : Ressources par type (WoW)" expanded="false">
+                <content>
+                    <GridPane hgap="12" vgap="10">
+                        <padding>
+                            <Insets top="10.0" right="10.0" bottom="10.0" left="10.0"/>
+                        </padding>
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="140.0"/>
+                            <ColumnConstraints minWidth="160.0"/>
+                            <ColumnConstraints minWidth="140.0"/>
+                            <ColumnConstraints minWidth="160.0"/>
+                        </columnConstraints>
+
+                        <Label text="MANA" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <ColorPicker fx:id="manaColorPicker" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                        <Label text="RAGE" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+                        <ColorPicker fx:id="rageColorPicker" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+                        <Label text="ENERGY" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <ColorPicker fx:id="energyColorPicker" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                        <Label text="FOCUS" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+                        <ColorPicker fx:id="focusColorPicker" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+
+                        <Label text="FURY" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <ColorPicker fx:id="furyColorPicker" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                        <Label text="INSANITY" GridPane.rowIndex="2" GridPane.columnIndex="2"/>
+                        <ColorPicker fx:id="insanityColorPicker" GridPane.rowIndex="2" GridPane.columnIndex="3"/>
+
+                        <Label text="MAELSTROM" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <ColorPicker fx:id="maelstromColorPicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                        <Label text="RUNIC_POWER" GridPane.rowIndex="3" GridPane.columnIndex="2"/>
+                        <ColorPicker fx:id="runicColorPicker" GridPane.rowIndex="3" GridPane.columnIndex="3"/>
+                    </GridPane>
+                </content>
+            </TitledPane>
+
+            <!-- Aperçu visuel -->
+            <TitledPane text="Aperçu (simulation)">
+                <content>
+                    <VBox spacing="10">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="HP %"/>
+                            <Slider fx:id="hpPreviewSlider" min="0" max="100" value="75" prefWidth="280"/>
+                            <Label fx:id="hpPreviewLabel" text="75%"/>
+                        </HBox>
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Label text="Ressource %"/>
+                            <Slider fx:id="resPreviewSlider" min="0" max="100" value="40" prefWidth="280"/>
+                            <Label fx:id="resPreviewLabel" text="40%"/>
+                        </HBox>
+                        <VBox spacing="8">
+                            <HBox fx:id="hpPreviewRow" spacing="4"/>
+                            <HBox fx:id="resPreviewRow" spacing="4"/>
+                        </VBox>
+                    </VBox>
+                </content>
+            </TitledPane>
+        </VBox>
     </center>
+
+    <!-- Barre de statut -->
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_LEFT" styleClass="statusbar">
+            <padding>
+                <Insets top="10.0" right="14.0" bottom="12.0" left="14.0"/>
+            </padding>
+            <Label text="État:"/>
+            <Label fx:id="statusLbl" text="Prêt"/>
+        </HBox>
+    </bottom>
 </BorderPane>

@@ -1,21 +1,21 @@
 {
-  "hpRow": 0,
-  "hpFirstCol": 0,
-  "hpLastCol": 21,
-  "resourceRow": 1,
-  "resourceFirstCol": 0,
-  "resourceLastCol": 21,
-  "hpColor": 65280,
-  "resourceColor": 16776960,
-  "resourceColors": {
-    "MANA": 255,
-    "RAGE": 16711680,
-    "ENERGY": 16753920,
-    "FOCUS": 16776960,
-    "FURY": 16711935,
-    "INSANITY": 16711935,
-    "MAELSTROM": 8421504,
-    "RUNIC_POWER": 65535
+  "hpColor" : 65280,
+  "hpFirstCol" : 0,
+  "backgroundColor" : 10046720,
+  "resourceColor" : 16753920,
+  "resourceLastCol" : 21,
+  "resourceFirstCol" : 0,
+  "hpLastCol" : 21,
+  "resourceRow" : 1,
+  "resourceColors" : {
+    "ENERGY" : 16753920,
+    "MANA" : 255,
+    "INSANITY" : 65535,
+    "RUNIC_POWER" : 65535,
+    "FOCUS" : 16776960,
+    "FURY" : 16711935,
+    "RAGE" : 16711680,
+    "MAELSTROM" : 8421504
   },
-  "backgroundColor": d5b6f9
+  "hpRow" : 0
 }
