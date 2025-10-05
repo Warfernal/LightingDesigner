@@ -1,2 +1,5 @@
 # Project exclude paths
 /target/
+/node/
+/frontend/node_modules/
+/frontend/dist/
