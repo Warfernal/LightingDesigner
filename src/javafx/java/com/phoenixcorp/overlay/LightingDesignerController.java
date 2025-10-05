@@ -1,5 +1,6 @@
 package com.phoenixcorp.overlay;
 
+import com.phoenixcorp.overlay.api.LightingRuntime;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -9,20 +10,11 @@ import javafx.scene.paint.Color;
 import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class LightingDesignerController {
 
-    private final ChromaSessionManager chroma = new ChromaSessionManager();
-    private final ColorMatrixBuilder builder   = new ColorMatrixBuilder();
     private LightingOverrides overrides        = LightingOverrides.loadOrDefaults();
-
-    private OcrRunner ocrRunner;
-    private SnapshotToMatrix snapshotToMatrix;
-    private volatile OcrReader.Snapshot lastSnapshot;
-
-    private double minDeltaPct = 0.01; // 1%
+    private LightingRuntime runtime;
     private static final int PREVIEW_COLS = 22;
 
     // Boutons
@@ -63,7 +55,7 @@ public final class LightingDesignerController {
 
     @FXML
     public void initialize() {
-        snapshotToMatrix = new SnapshotToMatrix(builder, overrides);
+        runtime = new LightingRuntime(overrides);
 
         // Actions
         if (startBtn     != null) startBtn.setOnAction(e -> onStart());
@@ -112,52 +104,15 @@ public final class LightingDesignerController {
     // ---------- Actions principales ----------
 
     private void onStart() {
-        if (ocrRunner != null && ocrRunner.isRunning()) return;
+        if (!runtime.start()) return;
 
-        // Fond sur périphériques
-        if (overrides.hasBackground()) {
-            chroma.setStaticAllDevices(overrides.backgroundBgr());
-        }
-
-        OcrReader reader = buildOcrReaderFromConfigOrDefault();
-
-        final AtomicReference<int[][]> lastMatrix = new AtomicReference<>();
-        final AtomicReference<Double> lastHpPct   = new AtomicReference<>(-1.0);
-        final AtomicReference<Double> lastResPct  = new AtomicReference<>(-1.0);
-
-        ocrRunner = new OcrRunner(reader, (snap) -> {
-            lastSnapshot = snap;
-
-            double hpPct = pct(snap.hpCur,  snap.hpMax);
-            double rPct  = pct(snap.resCur, snap.resMax);
-
-            Double lh = lastHpPct.get();
-            Double lr = lastResPct.get();
-            if (lh >= 0 && Math.abs(hpPct - lh) < minDeltaPct && lr >= 0 && Math.abs(rPct - lr) < minDeltaPct) {
-                return;
-            }
-
-            int[][] m = snapshotToMatrix.toKeyboard(snap);
-            int[][] prev = lastMatrix.get();
-            if (!deepEquals(prev, m)) {
-                chroma.keyboardCustom(m);
-                lastMatrix.set(copyMatrix(m));
-                lastHpPct.set(hpPct);
-                lastResPct.set(rPct);
-            }
-        }, 100);
-
-        ocrRunner.start();
         if (startBtn != null) startBtn.setDisable(true);
         if (stopBtn  != null) stopBtn.setDisable(false);
         setStatus("En cours (OCR actif)");
     }
 
     private void onStop() {
-        if (ocrRunner != null) {
-            ocrRunner.stop();
-            ocrRunner = null;
-        }
+        runtime.stop();
         if (startBtn != null) startBtn.setDisable(false);
         if (stopBtn  != null) stopBtn.setDisable(true);
         setStatus("Arrêté");
@@ -166,13 +121,13 @@ public final class LightingDesignerController {
 
     private void onDefineArea() {
         try {
-            Optional<Rectangle> sel = SelectCaptureArea.selectInteractive();
-            if (sel.isEmpty()) return;
-            Rectangle area = sel.get();
-            ConfigManager cm = ConfigManager.getInstance();
-            Config cfg = cm.getConfig();
-            cfg.setOcrCaptureArea(area);
-            cm.save(cfg);
+            SelectCaptureArea.SelectionResult res = SelectCaptureArea.selectInteractiveForApi();
+            Rectangle area = res.area();
+            if (area == null) {
+                if (res.timedOut()) setStatus("Sélection OCR expirée");
+                return;
+            }
+            runtime.defineOcrArea(area);
             setStatus("Zone OCR définie: " + area.width + "x" + area.height + "@" + area.x + "," + area.y);
         } catch (Throwable t) {
             System.err.println("[OCR] Define area failed: " + t.getMessage());
@@ -196,37 +151,23 @@ public final class LightingDesignerController {
         overrides.resourceColors.put("MAELSTROM",   0x808080);
         overrides.resourceColors.put("RUNIC_POWER", 0x00FFFF);
 
-        snapshotToMatrix = new SnapshotToMatrix(builder, overrides);
-        LightingOverrides.save(overrides);
+        runtime.refreshOverrides(true);
         syncUiFromOverrides();
-        applyBackgroundToDevices();
-        repaintImmediate();
+        updatePreview();
         setStatus("Preset WoW appliqué");
     }
 
     private void resetDefaultsAndSave() {
         overrides = LightingOverrides.loadOrDefaults(); // recharge defaults si pas de fichier
-        snapshotToMatrix = new SnapshotToMatrix(builder, overrides);
-        LightingOverrides.save(overrides);
+        runtime.updateOverrides(overrides, true);
         syncUiFromOverrides();
-        applyBackgroundToDevices();
-        repaintImmediate();
+        updatePreview();
         setStatus("Couleurs réinitialisées");
     }
 
     private void onColorsChanged(boolean persist) {
-        // Reconstruit la pipeline et applique le fond
-        snapshotToMatrix = new SnapshotToMatrix(builder, overrides);
-        applyBackgroundToDevices();
-        if (persist) LightingOverrides.save(overrides);
-        repaintImmediate();
+        runtime.refreshOverrides(persist);
         updatePreview();
-    }
-
-    private void applyBackgroundToDevices() {
-        if (overrides.hasBackground()) {
-            chroma.setStaticAllDevices(overrides.backgroundBgr());
-        }
     }
 
     private void syncUiFromOverrides() {
@@ -263,41 +204,12 @@ public final class LightingDesignerController {
         if (statusLbl != null) Platform.runLater(() -> statusLbl.setText(s));
     }
 
-    // ---------- OCR / runtime ----------
-
-    private OcrReader buildOcrReaderFromConfigOrDefault() {
-        Rectangle area = loadOcrAreaFromConfig().orElse(new Rectangle(100, 100, 400, 120));
-        ConfigManager cm = ConfigManager.getInstance();
-        Config cfg = cm.getConfig();
-        String lang = Optional.ofNullable(cfg.getTessLang()).orElse("eng");
-        String tessDataPath = cfg.getTessDataPath();
-
-        if (tessDataPath == null || tessDataPath.isBlank()) {
-            java.nio.file.Path tessDir = TessdataBootstrapper.ensureLocalTessdata(lang);
-            tessDataPath = tessDir.toString();
-            cfg.tessDataPath = tessDataPath;
-            if (cfg.tessLang == null || cfg.tessLang.isBlank()) cfg.tessLang = lang;
-            cm.save(cfg);
-            System.out.println("[Tessdata] datapath=" + tessDataPath + " (lang=" + lang + ")");
-        }
-
-        return new TesseractOcrReader(area, tessDataPath, lang);
-    }
-
-    private Optional<Rectangle> loadOcrAreaFromConfig() {
-        try {
-            Config cfg = ConfigManager.getInstance().getConfig();
-            return Optional.ofNullable(cfg.getOcrCaptureArea());
-        } catch (Throwable t) {
-            return Optional.empty();
-        }
-    }
-
     public void shutdown() {
+        if (runtime == null) return;
         try {
-            if (ocrRunner != null) { ocrRunner.shutdown(); ocrRunner = null; }
+            runtime.stop();
         } catch (Exception ignore) {}
-        try { chroma.close(); } catch (Exception ignore) {}
+        runtime.shutdown();
     }
 
     // ---------- Aperçu (simulation) ----------
@@ -383,46 +295,4 @@ public final class LightingDesignerController {
         return def;
     }
 
-    // ---------- Repaint immédiat du clavier ----------
-
-    private void repaintImmediate() {
-        if (lastSnapshot != null) {
-            try {
-                int[][] m = snapshotToMatrix.toKeyboard(lastSnapshot);
-                chroma.keyboardCustom(m);
-            } catch (Exception ignore) {}
-        } else {
-            // Pas encore de snapshot OCR : envoyer au moins le fond pour feedback
-            if (overrides.hasBackground()) {
-                chroma.setStaticAllDevices(overrides.backgroundBgr());
-            }
-            // et un clavier rempli du fond
-            int[][] m = builder.full(overrides.backgroundBgr());
-            chroma.keyboardCustom(m);
-        }
-    }
-
-    // ---------- Utils ----------
-
-    private static boolean deepEquals(int[][] a, int[][] b) {
-        if (a == b) return true;
-        if (a == null || b == null) return false;
-        if (a.length != b.length) return false;
-        for (int i = 0; i < a.length; i++) if (!java.util.Arrays.equals(a[i], b[i])) return false;
-        return true;
-    }
-
-    private static int[][] copyMatrix(int[][] m) {
-        if (m == null) return null;
-        int[][] c = new int[m.length][];
-        for (int i = 0; i < m.length; i++) c[i] = java.util.Arrays.copyOf(m[i], m[i].length);
-        return c;
-    }
-
-    private static double pct(int cur, int max) {
-        if (max <= 0) return 0;
-        double p = (double) cur / (double) max;
-        if (p < 0) p = 0; if (p > 1) p = 1;
-        return p;
-    }
 }

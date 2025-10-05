@@ -4,14 +4,26 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SelectCaptureArea {
 
     public static Optional<Rectangle> selectInteractive() {
+        SelectionResult res = selectInteractiveForApi();
+        return Optional.ofNullable(res.area());
+    }
+
+    public static SelectionResult selectInteractiveForApi() {
+        return selectInteractiveForApi(Duration.ofSeconds(15));
+    }
+
+    public static SelectionResult selectInteractiveForApi(Duration timeout) {
         try {
             final Rectangle[] result = { null };
             final Object lock = new Object();
+            final AtomicBoolean completed = new AtomicBoolean(false);
 
             SwingUtilities.invokeLater(() -> {
                 JWindow overlay = new JWindow();
@@ -46,6 +58,7 @@ public class SelectCaptureArea {
                             result[0] = new Rectangle(x, y, w, h);
                         }
                         overlay.dispose();
+                        completed.set(true);
                         synchronized (lock) { lock.notifyAll(); }
                     }
                 });
@@ -58,13 +71,19 @@ public class SelectCaptureArea {
                 overlay.setVisible(true);
             });
 
-            synchronized (lock) { lock.wait(15000); } // timeout sécu
-            return Optional.ofNullable(result[0]);
+            long timeoutMillis = timeout == null ? 15000L : Math.max(1000L, timeout.toMillis());
+            synchronized (lock) { lock.wait(timeoutMillis); } // timeout sécu
+            boolean timedOut = !completed.get();
+            return new SelectionResult(result[0], timedOut);
         } catch (InterruptedException e) {
-            return Optional.empty();
+            Thread.currentThread().interrupt();
+            return new SelectionResult(null, true);
         } catch (Throwable t) {
             System.err.println("[SelectCaptureArea] " + t.getMessage());
-            return Optional.empty();
+            return new SelectionResult(null, false);
         }
+    }
+
+    public record SelectionResult(Rectangle area, boolean timedOut) {
     }
 }
