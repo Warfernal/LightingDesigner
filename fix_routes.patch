@@ -1,0 +1,38 @@
+cat <<'EOF' > fix_routes.patch
+diff --git a/src/main/java/com/phoenixcorp/overlay/FrontendForwardingController.java b/src/main/java/com/phoenixcorp/overlay/FrontendForwardingController.java
+deleted file mode 100644
+--- a/src/main/java/com/phoenixcorp/overlay/FrontendForwardingController.java
++++ /dev/null
+@@ -1,20 +0,0 @@
+-package com.phoenixcorp.overlay;
+-
+-import jakarta.servlet.http.HttpServletRequest;
+-import org.springframework.stereotype.Controller;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-
+-@Controller
+-public class FrontendForwardingController {
+-
+-    @RequestMapping(value = "/{path:[^\\.]*}")
+-    public String forward(HttpServletRequest request) {
+-        return "forward:/";
+-    }
+-}
+diff --git a/src/main/java/com/phoenixcorp/overlay/api/HomeController.java b/src/main/java/com/phoenixcorp/overlay/api/HomeController.java
+--- a/src/main/java/com/phoenixcorp/overlay/api/HomeController.java
++++ b/src/main/java/com/phoenixcorp/overlay/api/HomeController.java
+@@ -6,9 +6,10 @@
+ @Controller
+ public class HomeController {
+-
+-    @RequestMapping("/")
+-    public String root() {
+-        return "index";
+-    }
++    // Sert le frontend React depuis /static/index.html
++    @GetMapping("/")
++    public String root() {
++        return "forward:/index.html";
++    }
+ }
+EOF

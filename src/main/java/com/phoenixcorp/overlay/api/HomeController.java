@@ -6,15 +6,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
-    // /, /index, /home → index.html du dossier /static
-    @GetMapping(value = { "/", "/index", "/home" })
+    // Sert le frontend React (index.html dans /static)
+    @GetMapping("/")
     public String root() {
-        return "forward:/index.html";
-    }
-
-    // Toute route sans extension (ex: /settings, /preview) → index.html (React Router)
-    @GetMapping("/{path:[^\\.]*}")
-    public String anySpaPath() {
         return "forward:/index.html";
     }
 }
