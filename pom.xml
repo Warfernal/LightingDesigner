@@ -2,104 +2,94 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
-        <relativePath/>
-    </parent>
-
     <groupId>com.phoenixcorp</groupId>
-    <artifactId>LightingDesigner</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <name>LightingDesigner</name>
+    <artifactId>lightingdesigner</artifactId>
+    <version>1.0.0</version>
 
     <properties>
         <java.version>21</java.version>
-        <javafx.version>21</javafx.version>
-        <frontend.directory>${project.basedir}/frontend</frontend.directory>
-        <frontend.skip>false</frontend.skip>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Forcer une version unique de Jackson (évite ton crash 2.17/2.15) -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.15.4</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <!-- API REST -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>3.2.5</version>
         </dependency>
+
+        <!-- Tes libs existantes : TESS4J / JNA / PDFBox / etc. → LAISSE-LES -->
 
         <dependency>
-            <groupId>net.sourceforge.tess4j</groupId>
-            <artifactId>tess4j</artifactId>
-            <version>5.12.0</version>
+          <groupId>net.sourceforge.tess4j</groupId>
+          <artifactId>tess4j</artifactId>
+          <version>5.12.0</version>
         </dependency>
-
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.14.0</version>
-        </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna-platform</artifactId>
-            <version>5.14.0</version>
-        </dependency>
-
-
-                <dependency>
-                    <groupId>com.fasterxml.jackson</groupId>
-                    <artifactId>jackson-bom</artifactId>
-                    <version>2.15.4</version>
-                    <type>pom</type>
-                    <scope>import</scope>
-                </dependency>
-
 
     </dependencies>
 
     <build>
         <plugins>
+            <!-- Build & copy du frontend React -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.14.1</version>
-                <configuration>
-                    <installDirectory>node</installDirectory>
-                    <workingDirectory>${frontend.directory}</workingDirectory>
-                    <skip>${frontend.skip}</skip>
-                </configuration>
+                <version>1.15.0</version>
+                <configuration><workingDirectory>frontend</workingDirectory></configuration>
                 <executions>
                     <execution>
-                        <id>install-node-and-npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
+                        <id>install-node-npm</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
                         <configuration>
-                            <nodeVersion>v18.19.1</nodeVersion>
-                            <npmVersion>9.8.1</npmVersion>
+                            <nodeVersion>v22.12.0</nodeVersion>
+                            <npmVersion>10.8.2</npmVersion>
                         </configuration>
                     </execution>
                     <execution>
                         <id>npm-ci</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <arguments>install</arguments>
-                        </configuration>
+                        <goals><goal>npm</goal></goals>
+                        <configuration><arguments>ci</arguments></configuration>
                     </execution>
                     <execution>
                         <id>npm-build</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
                         <phase>generate-resources</phase>
-                        <configuration>
-                            <arguments>run build</arguments>
-                        </configuration>
+                        <goals><goal>npm</goal></goals>
+                        <configuration><arguments>run build</arguments></configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.2.5</version>
+                <executions>
+                    <execution><goals><goal>repackage</goal></goals></execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>21</release>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -108,143 +98,40 @@
                 <version>3.3.1</version>
                 <executions>
                     <execution>
-                        <id>copy-frontend</id>
+                        <id>copy-react-to-static</id>
                         <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
+                        <goals><goal>copy-resources</goal></goals>
                         <configuration>
                             <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
                             <resources>
-                                <resource>
-                                    <directory>${frontend.directory}/dist</directory>
-                                    <filtering>false</filtering>
-                                </resource>
+                                <resource><directory>${project.basedir}/frontend/dist</directory></resource>
                             </resources>
-                            <skip>${frontend.skip}</skip>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
+            <!-- Copie le dist vers /static (servi par Spring) -->
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.phoenixcorp.overlay.LightingDesignerServer</mainClass>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-react-to-static</id>
+                        <phase>process-resources</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/frontend/dist</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>javafx-desktop</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.openjfx</groupId>
-                    <artifactId>javafx-controls</artifactId>
-                    <version>${javafx.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.openjfx</groupId>
-                    <artifactId>javafx-fxml</artifactId>
-                    <version>${javafx.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.openjfx</groupId>
-                    <artifactId>javafx-graphics</artifactId>
-                    <version>${javafx.version}</version>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>3.5.0</version>
-                        <executions>
-                            <execution>
-                                <id>add-javafx-sources</id>
-                                <goals>
-                                    <goal>add-source</goal>
-                                    <goal>add-resource</goal>
-                                </goals>
-                                <configuration>
-                                    <sources>
-                                        <source>src/javafx/java</source>
-                                    </sources>
-                                    <resources>
-                                        <resource>
-                                            <directory>src/javafx/resources</directory>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-react-build</id>
-                                <phase>process-resources</phase>
-                                <goals><goal>copy-resources</goal></goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${project.basedir}/frontend/dist</directory>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.github.eirslett</groupId>
-                        <artifactId>frontend-maven-plugin</artifactId>
-                        <version>1.12.1</version>
-                        <executions>
-                            <execution>
-                                <id>install node and npm</id>
-                                <goals><goal>install-node-and-npm</goal></goals>
-                                <configuration>
-                                    <nodeVersion>v18.18.2</nodeVersion>
-                                    <npmVersion>9.8.1</npmVersion>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>npm install</id>
-                                <goals><goal>npm</goal></goals>
-                                <configuration>
-                                    <arguments>install</arguments>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>npm build</id>
-                                <goals><goal>npm</goal></goals>
-                                <configuration>
-                                    <arguments>run build</arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.openjfx</groupId>
-                        <artifactId>javafx-maven-plugin</artifactId>
-                        <version>0.0.8</version>
-                        <configuration>
-                            <mainClass>com.phoenixcorp.overlay.LightingDesignerFX</mainClass>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
